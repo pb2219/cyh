@@ -1,0 +1,35 @@
+{
+  "bsonType": "object",
+  "required": ["name", "type"],
+  "permission": {
+    "read": true,
+    "create": true,
+    "update": true,
+    "delete": true
+  },
+  "properties": {
+    "_id": {
+      "bsonType": "string",
+      "description": "分类ID"
+    },
+    "name": {
+      "bsonType": "string",
+      "description": "分类名称"
+    },
+    "type": {
+      "bsonType": "string",
+      "enum": ["income", "expense"],
+      "description": "类型：收入/支出"
+    },
+    "icon": {
+      "bsonType": "string",
+      "description": "图标",
+      "defaultValue": "💰"
+    },
+    "sort": {
+      "bsonType": "int",
+      "description": "排序",
+      "defaultValue": 0
+    }
+  }
+}

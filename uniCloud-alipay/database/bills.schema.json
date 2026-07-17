@@ -1,0 +1,46 @@
+{
+  "bsonType": "object",
+  "required": ["type", "amount", "date"],
+  "permission": {
+    "read": true,
+    "create": true,
+    "update": true,
+    "delete": true
+  },
+  "properties": {
+    "_id": {
+      "bsonType": "string",
+      "description": "记录ID"
+    },
+    "type": {
+      "bsonType": "string",
+      "enum": ["income", "expense"],
+      "description": "类型：收入/支出"
+    },
+    "amount": {
+      "bsonType": "double",
+      "description": "金额",
+      "minimum": 0.01
+    },
+    "category": {
+      "bsonType": "string",
+      "description": "分类名称"
+    },
+    "remark": {
+      "bsonType": "string",
+      "description": "备注",
+      "defaultValue": ""
+    },
+    "date": {
+      "bsonType": "string",
+      "description": "日期 YYYY-MM-DD"
+    },
+    "createTime": {
+      "bsonType": "timestamp",
+      "description": "创建时间",
+      "forceDefaultValue": {
+        "$env": "now"
+      }
+    }
+  }
+}
