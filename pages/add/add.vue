@@ -168,7 +168,8 @@
 					{ name: '工资', type: 'income', icon: '💼', sort: 1 },
 					{ name: '兼职', type: 'income', icon: '💻', sort: 2 },
 					{ name: '投资', type: 'income', icon: '📈', sort: 3 },
-					{ name: '红包', type: 'income', icon: '🧧', sort: 4 }
+					{ name: '红包', type: 'income', icon: '🧧', sort: 4 },
+					{ name: '奖金', type: 'income', icon: '💰', sort: 5 }
 				]
 				for (const cat of defaults) {
 					try {
