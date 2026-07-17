@@ -1,11 +1,7 @@
 <script>
 	export default {
 		onLaunch: function() {
-			console.log('记账助手 App Launch')
-			// 检查 uniCloud 是否可用
-			// #ifdef H5
-			console.log('运行环境：H5')
-			// #endif
+			console.log('🌸 记账助手 App Launch')
 		},
 		onShow: function() {
 			console.log('App Show')
@@ -17,10 +13,10 @@
 </script>
 
 <style>
-	/* 全局公共样式 */
+	/* 全局可爱风格 */
 	page {
-		background-color: #F5F5F5;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+		background-color: #FFF5F7;
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 	}
 
 	/* 按钮重置 */

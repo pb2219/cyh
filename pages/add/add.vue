@@ -2,51 +2,96 @@
 	<view class="container">
 		<!-- 类型切换 -->
 		<view class="type-switch">
-			<view class="switch-btn" :class="{ active: formData.type === 'expense' }" @tap="switchType('expense')">
-				支出
+			<view class="switch-track" :class="{ 'track-income': formData.type === 'income' }">
+				<view class="switch-thumb" :class="{ 'thumb-right': formData.type === 'income' }"></view>
 			</view>
-			<view class="switch-btn" :class="{ active: formData.type === 'income' }" @tap="switchType('income')">
-				收入
+			<view class="switch-labels">
+				<view class="switch-label" :class="{ active: formData.type === 'expense' }"
+					@tap="switchType('expense')">
+					<text class="label-emoji">💸</text>
+					<text>支出</text>
+				</view>
+				<view class="switch-label" :class="{ active: formData.type === 'income' }"
+					@tap="switchType('income')">
+					<text class="label-emoji">💰</text>
+					<text>收入</text>
+				</view>
 			</view>
 		</view>
 
 		<!-- 金额输入 -->
-		<view class="amount-section">
-			<text class="currency">¥</text>
-			<input class="amount-input" type="digit" v-model="amountStr" placeholder="0.00" focus
-				:adjust-position="true" />
+		<view class="amount-card">
+			<text class="amount-emoji">{{ formData.type === 'income' ? '🤑' : '😌' }}</text>
+			<view class="amount-row">
+				<text class="currency">¥</text>
+				<input class="amount-input" type="digit" v-model="amountStr" placeholder="0.00" focus
+					:adjust-position="true" />
+			</view>
+			<view class="amount-divider"></view>
 		</view>
 
 		<!-- 分类选择 -->
 		<view class="form-group">
-			<text class="form-label">分类</text>
-			<scroll-view scroll-x class="category-scroll">
-				<view v-for="cat in currentCategories" :key="cat._id" class="category-tag"
-					:class="{ selected: formData.category === cat.name }" @tap="selectCategory(cat)">
-					<text class="cat-icon">{{ cat.icon }}</text>
-					<text class="cat-name">{{ cat.name }}</text>
+			<view class="form-label-row">
+				<text class="label-emoji-sm">🏷️</text>
+				<text class="form-label">选择分类</text>
+			</view>
+			<scroll-view scroll-x class="category-scroll" :show-scrollbar="false">
+				<view class="category-row">
+					<view v-for="cat in currentCategories" :key="cat._id" class="category-tag"
+						:class="{ selected: formData.category === cat.name }" @tap="selectCategory(cat)">
+						<view class="tag-icon-wrap" :class="{ 'icon-picked': formData.category === cat.name }">
+							<text class="cat-icon">{{ cat.icon }}</text>
+						</view>
+						<text class="cat-name">{{ cat.name }}</text>
+					</view>
 				</view>
 			</scroll-view>
 		</view>
 
 		<!-- 日期选择 -->
 		<view class="form-group">
-			<text class="form-label">日期</text>
+			<view class="form-label-row">
+				<text class="label-emoji-sm">📆</text>
+				<text class="form-label">日期</text>
+			</view>
 			<picker mode="date" :value="formData.date" :end="today" @change="onDateChange">
-				<view class="picker-value">{{ formData.date }}</view>
+				<view class="field-card">
+					<text class="field-value">{{ formData.date }}</text>
+					<text class="field-icon">📅</text>
+				</view>
 			</picker>
 		</view>
 
 		<!-- 备注 -->
 		<view class="form-group">
-			<text class="form-label">备注</text>
-			<input class="remark-input" v-model="formData.remark" placeholder="添加备注（选填）" />
+			<view class="form-label-row">
+				<text class="label-emoji-sm">💬</text>
+				<text class="form-label">备注（选填）</text>
+			</view>
+			<view class="field-card">
+				<input class="remark-input" v-model="formData.remark" placeholder="今天吃了什么好吃的呀~" />
+				<text class="field-icon">✏️</text>
+			</view>
 		</view>
 
 		<!-- 保存按钮 -->
-		<button class="save-btn" :disabled="!canSave || saving" @tap="saveBill">
-			{{ saving ? '保存中...' : '保 存' }}
+		<button class="save-btn" :class="{ 'save-disabled': !canSave || saving }"
+			:disabled="!canSave || saving" @tap="saveBill">
+			<text class="save-emoji">{{ saving ? '⏳' : '✨' }}</text>
+			<text>{{ saving ? '保存中...' : '记录这笔' }}</text>
 		</button>
+
+		<!-- 快捷金额 -->
+		<view class="quick-amounts">
+			<text class="quick-title">快捷金额</text>
+			<view class="quick-row">
+				<view v-for="num in quickNumbers" :key="num" class="quick-chip"
+					@tap="addQuickAmount(num)">
+					<text>+{{ num }}</text>
+				</view>
+			</view>
+		</view>
 	</view>
 </template>
 
@@ -66,7 +111,8 @@
 				amountStr: '',
 				today,
 				categories: [],
-				saving: false
+				saving: false,
+				quickNumbers: [10, 20, 50, 100, 200]
 			}
 		},
 		computed: {
@@ -91,6 +137,10 @@
 			onDateChange(e) {
 				this.formData.date = e.detail.value
 			},
+			addQuickAmount(num) {
+				const current = Number(this.amountStr) || 0
+				this.amountStr = String(current + num)
+			},
 			async loadCategories() {
 				try {
 					const res = await uniCloud.callFunction({
@@ -100,7 +150,6 @@
 					if (res.result && res.result.code === 0) {
 						this.categories = res.result.data
 					}
-					// 如果没有分类，初始化默认分类
 					if (!this.categories || this.categories.length === 0) {
 						await this.initDefaultCategories()
 					}
@@ -127,11 +176,8 @@
 							name: 'add-category',
 							data: cat
 						})
-					} catch (e) {
-						// 忽略已存在的分类
-					}
+					} catch (e) {}
 				}
-				// 重新加载分类
 				const res = await uniCloud.callFunction({
 					name: 'get-categories',
 					data: {}
@@ -142,7 +188,6 @@
 			},
 			async saveBill() {
 				if (!this.canSave) return
-
 				this.saving = true
 				try {
 					const res = await uniCloud.callFunction({
@@ -155,9 +200,8 @@
 							remark: this.formData.remark
 						}
 					})
-
 					if (res.result && res.result.code === 0) {
-						uni.showToast({ title: '保存成功', icon: 'success' })
+						uni.showToast({ title: '✨ 记录成功', icon: 'success' })
 						this.resetForm()
 					} else {
 						uni.showToast({
@@ -182,134 +226,301 @@
 
 <style scoped>
 	.container {
-		padding: 30rpx;
+		padding: 24rpx 30rpx 40rpx;
 	}
 
+	/* 类型切换 */
 	.type-switch {
 		display: flex;
-		background: #f0f0f0;
-		border-radius: 40rpx;
-		padding: 6rpx;
-		margin-bottom: 40rpx;
+		flex-direction: column;
+		align-items: center;
+		margin-bottom: 24rpx;
 	}
 
-	.switch-btn {
-		flex: 1;
-		text-align: center;
-		padding: 16rpx 0;
-		border-radius: 36rpx;
-		font-size: 28rpx;
-		color: #666;
+	.switch-track {
+		width: 200rpx;
+		height: 64rpx;
+		background: #FFE0E8;
+		border-radius: 40rpx;
+		position: relative;
+		padding: 6rpx;
+		transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.switch-track.track-income {
+		background: #E0F5E0;
+	}
+
+	.switch-thumb {
+		width: 52rpx;
+		height: 52rpx;
+		background: #fff;
+		border-radius: 50%;
+		box-shadow: 0 4rpx 12rpx rgba(255, 107, 157, 0.25);
+		transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.thumb-right {
+		transform: translateX(136rpx);
+		box-shadow: 0 4rpx 12rpx rgba(126, 203, 118, 0.25);
+	}
+
+	.switch-labels {
+		display: flex;
+		justify-content: space-between;
+		width: 320rpx;
+		margin-top: 14rpx;
+	}
+
+	.switch-label {
+		display: flex;
+		align-items: center;
+		gap: 6rpx;
+		font-size: 26rpx;
+		color: #D4C5D9;
+		padding: 8rpx 20rpx;
+		border-radius: 24rpx;
 		transition: all 0.3s;
 	}
 
-	.switch-btn.active {
+	.switch-label.active {
+		color: #FF6B9D;
+		font-weight: 600;
+		background: #FFF0F5;
+	}
+
+	.switch-label:last-child.active {
+		color: #5CB85C;
+		background: #F0FDF0;
+	}
+
+	.label-emoji {
+		font-size: 28rpx;
+	}
+
+	/* 金额卡片 */
+	.amount-card {
 		background: #fff;
-		color: #FF4D4F;
-		font-weight: bold;
-		box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+		border-radius: 32rpx;
+		padding: 30rpx 30rpx 20rpx;
+		margin-bottom: 24rpx;
+		box-shadow: 0 4rpx 20rpx rgba(255, 107, 157, 0.06);
 	}
 
-	.switch-btn:last-child.active {
-		color: #52C41A;
+	.amount-emoji {
+		font-size: 40rpx;
+		display: block;
+		text-align: center;
+		margin-bottom: 10rpx;
 	}
 
-	.amount-section {
+	.amount-row {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 40rpx 0;
-		border-bottom: 2rpx solid #f0f0f0;
-		margin-bottom: 30rpx;
 	}
 
 	.currency {
-		font-size: 56rpx;
-		color: #333;
-		font-weight: bold;
-		margin-right: 10rpx;
+		font-size: 60rpx;
+		color: #FF6B9D;
+		font-weight: 700;
+		margin-right: 8rpx;
 	}
 
 	.amount-input {
-		font-size: 72rpx;
-		font-weight: bold;
-		color: #333;
-		width: 400rpx;
+		font-size: 76rpx;
+		font-weight: 700;
+		color: #4A3640;
+		width: 360rpx;
 		text-align: left;
 	}
 
+	.amount-divider {
+		height: 4rpx;
+		background: linear-gradient(90deg, transparent, #FFD4E0, transparent);
+		border-radius: 2rpx;
+		margin-top: 20rpx;
+	}
+
+	/* 表单组 */
 	.form-group {
-		margin-bottom: 30rpx;
+		margin-bottom: 24rpx;
+	}
+
+	.form-label-row {
+		display: flex;
+		align-items: center;
+		gap: 8rpx;
+		margin-bottom: 14rpx;
+	}
+
+	.label-emoji-sm {
+		font-size: 24rpx;
 	}
 
 	.form-label {
-		font-size: 26rpx;
-		color: #999;
-		margin-bottom: 16rpx;
-		display: block;
+		font-size: 24rpx;
+		color: #C4B5C9;
+		font-weight: 500;
 	}
 
+	/* 通用卡片字段 */
+	.field-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		background: #fff;
+		border-radius: 24rpx;
+		padding: 20rpx 24rpx;
+		box-shadow: 0 2rpx 12rpx rgba(255, 107, 157, 0.04);
+	}
+
+	.field-value {
+		font-size: 30rpx;
+		color: #4A3640;
+	}
+
+	.field-icon {
+		font-size: 28rpx;
+	}
+
+	/* 分类选择 */
 	.category-scroll {
 		white-space: nowrap;
-		padding: 10rpx 0;
+	}
+
+	.category-row {
+		display: inline-flex;
+		gap: 16rpx;
+		padding: 4rpx 0;
 	}
 
 	.category-tag {
 		display: inline-flex;
 		flex-direction: column;
 		align-items: center;
-		padding: 16rpx 24rpx;
-		margin-right: 20rpx;
-		border-radius: 16rpx;
-		background: #f8f8f8;
-		transition: all 0.3s;
+		gap: 8rpx;
+		padding: 16rpx 10rpx;
+		min-width: 120rpx;
+		border-radius: 24rpx;
+		background: #fff;
+		box-shadow: 0 2rpx 12rpx rgba(255, 107, 157, 0.04);
+		transition: all 0.25s;
+		box-sizing: border-box;
+		border: 2rpx solid transparent;
 	}
 
 	.category-tag.selected {
-		background: #E6F4FF;
-		border: 2rpx solid #1677FF;
+		border-color: #FF6B9D;
+		background: #FFF5FA;
+		box-shadow: 0 6rpx 20rpx rgba(255, 107, 157, 0.12);
+		transform: translateY(-4rpx);
+	}
+
+	.tag-icon-wrap {
+		width: 64rpx;
+		height: 64rpx;
+		border-radius: 50%;
+		background: #FFF5F7;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.25s;
+	}
+
+	.icon-picked {
+		background: #FFE0EC;
+		transform: scale(1.08);
 	}
 
 	.cat-icon {
-		font-size: 36rpx;
-		margin-bottom: 6rpx;
+		font-size: 32rpx;
 	}
 
 	.cat-name {
 		font-size: 22rpx;
-		color: #666;
+		color: #B5A5B9;
 	}
 
 	.category-tag.selected .cat-name {
-		color: #1677FF;
+		color: #FF6B9D;
+		font-weight: 600;
 	}
 
-	.picker-value {
-		font-size: 30rpx;
-		color: #333;
-		padding: 16rpx 0;
-		border-bottom: 1rpx solid #f0f0f0;
-	}
-
+	/* 备注 */
 	.remark-input {
-		font-size: 30rpx;
-		color: #333;
-		padding: 16rpx 0;
-		border-bottom: 1rpx solid #f0f0f0;
-		width: 100%;
+		font-size: 28rpx;
+		color: #4A3640;
+		flex: 1;
 	}
 
+	.remark-input::placeholder {
+		color: #D9CCD9;
+	}
+
+	/* 保存按钮 */
 	.save-btn {
-		margin-top: 60rpx;
-		background: #1677FF;
+		margin-top: 24rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 10rpx;
+		background: linear-gradient(135deg, #FF6B9D, #FF8EAB);
 		color: #fff;
-		border-radius: 40rpx;
+		border-radius: 48rpx;
 		font-size: 32rpx;
-		font-weight: bold;
-		padding: 24rpx 0;
+		font-weight: 700;
+		padding: 26rpx 0;
+		box-shadow: 0 10rpx 30rpx rgba(255, 107, 157, 0.3);
+		transition: all 0.3s;
 	}
 
-	.save-btn[disabled] {
-		background: #ccc;
+	.save-btn:active {
+		transform: scale(0.97);
+	}
+
+	.save-disabled {
+		background: #E8DCE4;
+		box-shadow: none;
+		color: #C4B5C9;
+	}
+
+	.save-emoji {
+		font-size: 30rpx;
+	}
+
+	/* 快捷金额 */
+	.quick-amounts {
+		margin-top: 30rpx;
+		padding: 0 10rpx;
+	}
+
+	.quick-title {
+		font-size: 22rpx;
+		color: #D4C5D9;
+		margin-bottom: 14rpx;
+		display: block;
+	}
+
+	.quick-row {
+		display: flex;
+		gap: 14rpx;
+		flex-wrap: wrap;
+	}
+
+	.quick-chip {
+		padding: 10rpx 24rpx;
+		background: #fff;
+		border-radius: 24rpx;
+		font-size: 24rpx;
+		color: #FF6B9D;
+		font-weight: 500;
+		box-shadow: 0 2rpx 8rpx rgba(255, 107, 157, 0.06);
+		transition: all 0.2s;
+	}
+
+	.quick-chip:active {
+		background: #FFF0F5;
+		transform: scale(0.95);
 	}
 </style>
